@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오목 게임</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(15, 30px);
+            grid-template-rows: repeat(15, 30px);
+            gap: 1px;
+            background-color: #000;
+            border: 2px solid #000;
+        }
+        .cell {
+            width: 30px;
+            height: 30px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .cell:hover {
+            background-color: #eee;
+        }
+        .black {
+            background-color: #000; /* 검정색 */
+            border-radius: 50%; /* 원 모양 */
+        }
+        .green {
+            background-color: #228B22; /* 초록색 */
+            border-radius: 50%; /* 원 모양 */
+        }
+        .winning {
+            border: 2px solid red; /* 승리 셀 강조 */
+        }
+        .message {
+            margin-top: 20px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="board" id="board"></div>
+    <div class="message" id="message"></div>
+    <script>
+        const boardSize = 15;
+        const board = document.getElementById('board');
+        const message = document.getElementById('message');
+        let currentPlayer = 'black';
+        const gameBoard = Array(boardSize).fill().map(() => Array(boardSize).fill(null));
+        let gameActive = true;
+
+        // Initialize the board
+        function initializeBoard() {
+            board.innerHTML = '';
+            for (let row = 0; row < boardSize; row++) {
+                for (let col = 0; col < boardSize; col++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.addEventListener('click', handleClick);
+                    board.appendChild(cell);
+                }
+            }
+            message.textContent = ''; // Clear message on restart
+        }
+
+        // Handle cell click
+        function handleClick(event) {
+            if (!gameActive) return;
+
+            const cell = event.target;
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            
+            if (gameBoard[row][col] !== null) return; // Cell already occupied
+
+            // Place the current player's stone
+            gameBoard[row][col] = currentPlayer;
+            cell.classList.add(currentPlayer);
+
+            // Check for a win
+            if (checkWin(row, col)) {
+                message.textContent = `${currentPlayer === 'black' ? 'Black' : 'Green'} wins! End Game`;
+                highlightWinningLine(row, col);
+                gameActive = false;
+                return;
+            }
+
+            // Switch player
+            currentPlayer = currentPlayer === 'black' ? 'green' : 'black';
+        }
+
+        // Check for a win
+        function checkWin(row, col) {
+            const directions = [
+                [1, 0], [0, 1], [1, 1], [1, -1]
+            ];
+
+            function countStones(r, c, dr, dc) {
+                let count = 0;
+                while (r >= 0 && r < boardSize && c >= 0 && c < boardSize && gameBoard[r][c] === currentPlayer) {
+                    count++;
+                    r += dr;
+                    c += dc;
+                }
+                return count;
+            }
+
+            for (const [dr, dc] of directions) {
+                const count = 1 + countStones(row + dr, col + dc, dr, dc) + countStones(row - dr, col - dc, -dr, -dc) - 1;
+                if (count === 5) return true; // Check for exactly 5
+            }
+
+            return false;
+        }
+
+        // Highlight the winning line
+        function highlightWinningLine(row, col) {
+            const directions = [
+                [1, 0], [0, 1], [1, 1], [1, -1]
+            ];
+
+            function getWinningCells(r, c, dr, dc) {
+                const cells = [];
+                while (r >= 0 && r < boardSize && c >= 0 && c < boardSize && gameBoard[r][c] === currentPlayer) {
+                    cells.push([r, c]);
+                    r += dr;
+                    c += dc;
+                }
+                return cells;
+            }
+
+            function highlight(cells) {
+                cells.forEach(([r, c]) => {
+                    document.querySelector(`[data-row="${r}"][data-col="${c}"]`).classList.add('winning');
+                });
+            }
+
+            for (const [dr, dc] of directions) {
+                const cells = [
+                    ...getWinningCells(row - dr * 4, col - dc * 4, dr, dc), // Check in the opposite direction
+                    ...getWinningCells(row, col, dr, dc), // Check in the current direction
+                ];
+                if (cells.length >= 5) {
+                    highlight(cells.slice(0, 5)); // Highlight only the first 5 cells
+                    return;
+                }
+            }
+        }
+
+        // Initialize the board when the page loads
+        initializeBoard();
+    </script>
+</body>
+</html>
+
+
+
